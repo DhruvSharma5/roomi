@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROOMmitrra — Find Your Room in Delhi NCR</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#08090d;
+  --ink2:#10131c;
+  --ink3:#161b2e;
+  --blue:#3b82f6;
+  --cyan:#06d6f5;
+  --violet:#8b5cf6;
+  --green:#10d48e;
+  --gold:#f59e0b;
+  --white:#f0f4ff;
+  --muted:#7889b0;
+  --border:rgba(59,130,246,0.18);
+  --glow:rgba(59,130,246,0.5);
+  --r:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--ink);color:var(--white);font-family:'Outfit',sans-serif;overflow-x:hidden;cursor:none;}
+
+/* ── CURSOR ── */
+#cur,#cur2{position:fixed;border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
+#cur{width:10px;height:10px;background:var(--cyan);transition:transform .08s;}
+#cur2{width:36px;height:36px;border:1.5px solid rgba(6,214,245,.45);transition:left .12s,top .12s,transform .2s;}
+body:has(button:hover) #cur2{transform:translate(-50%,-50%) scale(2.2);}
+body:has(button:hover) #cur{transform:translate(-50%,-50%) scale(.3);}
+
+/* ── CANVAS ── */
+#cv{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:800;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;height:68px;
+  background:rgba(8,9,13,.7);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:2px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo em{-webkit-text-fill-color:var(--cyan);}
+.nav-hint{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.nav-hint span{color:var(--cyan);}
+.nav-right{display:flex;gap:10px;}
+.nb{padding:9px 22px;border-radius:50px;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:none;border:none;transition:all .25s;}
+.nb-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.nb-ghost:hover{border-color:var(--blue);color:var(--white);}
+.nb-solid{background:var(--blue);color:#fff;box-shadow:0 0 24px rgba(59,130,246,.4);}
+.nb-solid:hover{filter:brightness(1.15);transform:translateY(-1px);}
+
+/* ── HERO ── */
+#hero{
+  position:relative;z-index:1;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:100px 24px 60px;
+  perspective:800px;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 18px;border-radius:50px;
+  border:1px solid rgba(6,214,245,.35);
+  background:rgba(6,214,245,.07);
+  font-size:.75rem;font-weight:600;color:var(--cyan);
+  letter-spacing:1.2px;text-transform:uppercase;
+  margin-bottom:28px;
+  animation:fadeUp .8s ease both;
+}
+.blink{width:7px;height:7px;background:var(--cyan);border-radius:50%;animation:blink 1.2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+.hero-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(4.5rem,12vw,10rem);
+  line-height:.95;letter-spacing:2px;
+  margin-bottom:24px;
+  animation:fadeUp .9s .1s ease both;
+}
+.ht1{display:block;color:var(--white);}
+.ht2{display:block;
+  background:linear-gradient(90deg,var(--blue),var(--violet),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px rgba(59,130,246,.4));}
+.ht3{display:block;color:var(--cyan);
+  text-shadow:0 0 60px rgba(6,214,245,.5);}
+
+.hero-sub{
+  font-size:1.1rem;color:var(--muted);
+  max-width:540px;line-height:1.7;margin-bottom:44px;
+  animation:fadeUp .9s .2s ease both;
+}
+
+/* ── GUIDED CHOICE CARDS ── */
+.choice-label{
+  font-size:.7rem;font-weight:700;letter-spacing:2px;
+  color:var(--muted);text-transform:uppercase;
+  margin-bottom:20px;animation:fadeUp .9s .3s ease both;
+}
+.choice-row{
+  display:flex;gap:20px;justify-content:center;flex-wrap:wrap;
+  animation:fadeUp .9s .35s ease both;
+  margin-bottom:50px;
+}
+.choice-card{
+  width:240px;
+  background:rgba(16,19,28,.85);
+  border:2px solid var(--border);
+  border-radius:24px;padding:32px 24px 26px;
+  cursor:none;transition:all .45s cubic-bezier(.22,1,.36,1);
+  position:relative;overflow:hidden;text-align:center;
+}
+.choice-card::before{
+  content:'';position:absolute;inset:0;
+  opacity:0;transition:opacity .4s;
+  border-radius:24px;
+}
+.choice-card.finder::before{background:radial-gradient(circle at 50% 0%,rgba(59,130,246,.25),transparent 70%);}
+.choice-card.seeker::before{background:radial-gradient(circle at 50% 0%,rgba(6,214,245,.2),transparent 70%);}
+.choice-card:hover{transform:translateY(-14px) scale(1.03);border-color:var(--blue);
+  box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 60px rgba(59,130,246,.2);}
+.choice-card.seeker:hover{border-color:var(--cyan);
+  box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 60px rgba(6,214,245,.2);}
+.choice-card:hover::before{opacity:1;}
+.choice-icon{font-size:3rem;margin-bottom:14px;display:block;}
+.choice-name{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:1px;margin-bottom:8px;}
+.finder .choice-name{color:var(--blue);}
+.seeker .choice-name{color:var(--cyan);}
+.choice-desc{font-size:.82rem;color:var(--muted);line-height:1.55;margin-bottom:18px;}
+.choice-pill{
+  display:inline-block;padding:5px 16px;border-radius:50px;
+  font-size:.72rem;font-weight:700;letter-spacing:.5px;margin-bottom:20px;
+}
+.finder .choice-pill{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.3);}
+.seeker .choice-pill{background:rgba(6,214,245,.12);color:var(--cyan);border:1px solid rgba(6,214,245,.3);}
+.choice-perks{list-style:none;text-align:left;margin-bottom:24px;}
+.choice-perks li{font-size:.8rem;color:var(--muted);padding:5px 0;display:flex;gap:8px;align-items:center;border-bottom:1px solid rgba(255,255,255,.04);}
+.choice-perks li::before{content:'✓';font-weight:700;}
+.finder .choice-perks li::before{color:var(--blue);}
+.seeker .choice-perks li::before{color:var(--cyan);}
+.choice-btn{
+  width:100%;padding:13px;border-radius:50px;border:none;
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:.9rem;cursor:none;
+  transition:all .3s;
+}
+.finder .choice-btn{background:var(--blue);color:#fff;box-shadow:0 0 24px rgba(59,130,246,.35);}
+.seeker .choice-btn{background:var(--cyan);color:var(--ink);box-shadow:0 0 24px rgba(6,214,245,.3);}
+.choice-btn:hover{transform:translateY(-2px);filter:brightness(1.12);}
+
+/* ARROW BETWEEN CARDS */
+.or-divider{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;font-size:.75rem;color:var(--muted);font-weight:600;
+  animation:fadeUp .9s .35s ease both;
+}
+.or-line{width:1px;height:30px;background:var(--border);}
+
+/* ── STATS ── */
+.hero-stats{
+  display:flex;gap:60px;justify-content:center;
+  animation:fadeUp .9s .5s ease both;
+}
+.hstat{text-align:center;}
+.hstat-n{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;letter-spacing:1px;
+  background:linear-gradient(90deg,var(--cyan),var(--blue));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hstat-l{font-size:.72rem;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-top:2px;}
+
+/* ── 3D ROOM ILLUSTRATION ── */
+.room-3d{
+  position:absolute;right:5%;top:50%;transform:translateY(-50%);
+  width:280px;height:280px;
+  animation:float3d 5s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes float3d{0%,100%{transform:translateY(-50%) rotateX(8deg) rotateY(-8deg);}50%{transform:translateY(calc(-50% - 16px)) rotateX(-4deg) rotateY(8deg);}}
+
+/* ── SECTION SHARED ── */
+.section{position:relative;z-index:1;padding:80px 48px;}
+.sec-tag{
+  display:inline-block;padding:5px 16px;border-radius:50px;
+  border:1px solid var(--border);background:rgba(59,130,246,.06);
+  font-size:.7rem;font-weight:700;letter-spacing:1.5px;color:var(--blue);
+  text-transform:uppercase;margin-bottom:18px;
+}
+.sec-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(2.4rem,5vw,4rem);letter-spacing:1.5px;
+  margin-bottom:12px;line-height:1;
+}
+.sec-sub{color:var(--muted);font-size:.95rem;max-width:480px;line-height:1.65;margin-bottom:52px;}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(48px);transition:all .75s cubic-bezier(.22,1,.36,1);}
+.rv.vis{opacity:1;transform:none;}
+
+/* ── BROWSE / LISTINGS ── */
+#browse{padding:80px 48px;}
+.browse-head{display:flex;align-items:flex-end;justify-content:space-between;max-width:1200px;margin:0 auto 32px;flex-wrap:wrap;gap:16px;}
+
+/* FILTER */
+.filter-strip{
+  background:rgba(16,19,28,.9);border:1px solid var(--border);
+  border-radius:var(--r);padding:22px 28px;
+  max-width:1200px;margin:0 auto 32px;
+  display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;
+  backdrop-filter:blur(20px);
+}
+.fg{flex:1;min-width:140px;}
+.fg label{display:block;font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;}
+.fg select,.fg input{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1px solid var(--border);border-radius:10px;
+  padding:11px 14px;color:var(--white);font-family:'Outfit',sans-serif;
+  font-size:.88rem;outline:none;cursor:none;transition:border-color .25s;
+  appearance:none;
+}
+.fg select:focus,.fg input:focus{border-color:var(--blue);}
+.go-btn{
+  padding:12px 28px;border-radius:10px;border:none;
+  background:var(--blue);color:#fff;font-family:'Outfit',sans-serif;
+  font-weight:700;font-size:.9rem;cursor:none;transition:all .25s;white-space:nowrap;
+  box-shadow:0 0 20px rgba(59,130,246,.35);
+}
+.go-btn:hover{filter:brightness(1.15);transform:translateY(-2px);}
+
+/* CARDS GRID */
+.cards-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:22px;max-width:1200px;margin:0 auto;
+}
+.lc{
+  background:rgba(16,19,28,.9);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;cursor:none;
+  transition:all .4s cubic-bezier(.22,1,.36,1);
+  transform-style:preserve-3d;
+}
+.lc:hover{transform:translateY(-10px) rotateX(3deg);
+  border-color:rgba(59,130,246,.5);
+  box-shadow:0 40px 80px rgba(0,0,0,.5),0 0 50px rgba(59,130,246,.12);}
+.lc-top{
+  height:160px;display:flex;align-items:center;justify-content:center;
+  font-size:4rem;position:relative;
+  background:linear-gradient(135deg,#10131c,#161b2e);
+}
+.lc-top::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(16,19,28,.8));pointer-events:none;}
+.lc-body{padding:20px 22px;}
+.lc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.tag{padding:3px 10px;border-radius:50px;font-size:.7rem;font-weight:600;}
+.t-blue{background:rgba(59,130,246,.15);color:var(--blue);}
+.t-violet{background:rgba(139,92,246,.15);color:var(--violet);}
+.t-cyan{background:rgba(6,214,245,.1);color:var(--cyan);}
+.t-gold{background:rgba(245,158,11,.12);color:var(--gold);}
+.lc-title{font-weight:700;font-size:1.05rem;margin-bottom:4px;color:var(--white);}
+.lc-loc{font-size:.8rem;color:var(--muted);margin-bottom:14px;}
+.lc-row{display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,.05);}
+.lc-price{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.5px;color:var(--white);}
+.lc-price span{font-family:'Outfit',sans-serif;font-size:.75rem;color:var(--muted);font-weight:400;}
+.contact-btn{
+  padding:8px 18px;border-radius:50px;border:1px solid rgba(59,130,246,.35);
+  background:transparent;color:var(--blue);font-family:'Outfit',sans-serif;
+  font-size:.8rem;font-weight:600;cursor:none;transition:all .25s;
+}
+.contact-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.no-res{text-align:center;padding:60px;color:var(--muted);grid-column:1/-1;font-size:1rem;}
+
+/* ── HOW IT WORKS TIMELINE ── */
+.timeline{display:flex;gap:0;position:relative;max-width:1000px;margin:0 auto;}
+.timeline::before{content:'';position:absolute;top:36px;left:36px;right:36px;height:2px;background:linear-gradient(90deg,var(--blue),var(--cyan));opacity:.25;}
+.tl-item{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 16px;position:relative;z-index:1;}
+.tl-num{
+  width:72px;height:72px;border-radius:50%;
+  background:var(--ink2);border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:1.8rem;
+  color:var(--blue);margin-bottom:20px;
+  transition:all .4s;position:relative;
+}
+.tl-num::after{content:attr(data-icon);position:absolute;font-size:1.4rem;top:-8px;right:-8px;}
+.tl-item:hover .tl-num{background:var(--blue);color:#fff;border-color:var(--blue);transform:scale(1.15);box-shadow:0 0 30px rgba(59,130,246,.5);}
+.tl-t{font-weight:700;font-size:.95rem;margin-bottom:8px;}
+.tl-d{font-size:.82rem;color:var(--muted);line-height:1.55;}
+
+/* ── MODALS ── */
+.overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(8,9,13,.92);backdrop-filter:blur(20px);
+  display:none;align-items:center;justify-content:center;
+}
+.overlay.on{display:flex;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:var(--ink2);border:1px solid var(--border);
+  border-radius:28px;width:90%;max-width:520px;
+  padding:44px 40px;position:relative;
+  animation:slideUp .4s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 80px 160px rgba(0,0,0,.8),0 0 80px rgba(59,130,246,.08);
+  max-height:90vh;overflow-y:auto;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(50px) scale(.96);}to{opacity:1;transform:none;}}
+.modal-x{
+  position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.06);border:none;color:var(--muted);
+  font-size:1.1rem;cursor:none;display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.modal-x:hover{background:rgba(255,255,255,.14);color:var(--white);}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:1px;margin-bottom:4px;}
+.modal-sub{color:var(--muted);font-size:.85rem;margin-bottom:28px;}
+
+/* STEPPER */
+.stepper{display:flex;margin-bottom:32px;position:relative;}
+.stepper::before{content:'';position:absolute;top:14px;left:14px;right:14px;height:1.5px;background:var(--border);}
+.sp{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;}
+.sp-c{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--ink2);border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;color:var(--muted);transition:all .35s;
+}
+.sp.a .sp-c{border-color:var(--blue);background:var(--blue);color:#fff;box-shadow:0 0 16px rgba(59,130,246,.5);}
+.sp.d .sp-c{border-color:var(--green);background:var(--green);color:var(--ink);}
+.sp-l{font-size:.65rem;color:var(--muted);letter-spacing:.3px;}
+.sp.a .sp-l{color:var(--blue);}
+
+/* PANELS */
+.panel{display:none;}
+.panel.on{display:block;animation:panIn .3s ease;}
+@keyframes panIn{from{opacity:0;transform:translateX(18px);}to{opacity:1;transform:none;}}
+
+/* FORM ELEMENTS */
+.fg2{margin-bottom:18px;}
+.fg2 label{display:block;font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;}
+.fg2 input,.fg2 select,.fg2 textarea{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;color:var(--white);font-family:'Outfit',sans-serif;
+  font-size:.92rem;outline:none;transition:all .25s;
+}
+.fg2 input:focus,.fg2 select:focus,.fg2 textarea:focus{border-color:var(--blue);background:rgba(59,130,246,.06);}
+.fg2 textarea{resize:vertical;min-height:80px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{
+  padding:7px 14px;border-radius:50px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;
+  font-size:.8rem;cursor:none;transition:all .22s;
+}
+.chip:hover{border-color:var(--blue);color:var(--white);}
+.chip.on{border-color:var(--blue);color:var(--blue);background:rgba(59,130,246,.1);}
+.chip.multi.on{border-color:var(--violet);color:var(--violet);background:rgba(139,92,246,.1);}
+
+/* NEXT / BACK / SUBMIT */
+.btn-next,.btn-sub{
+  width:100%;padding:14px;border-radius:50px;border:none;
+  background:var(--blue);color:#fff;font-family:'Outfit',sans-serif;
+  font-weight:700;font-size:.95rem;cursor:none;margin-top:6px;
+  transition:all .3s;box-shadow:0 0 28px rgba(59,130,246,.3);
+}
+.btn-sub{background:linear-gradient(90deg,var(--blue),var(--violet));}
+.btn-next:hover,.btn-sub:hover{filter:brightness(1.12);transform:translateY(-2px);}
+.btn-back{
+  width:100%;padding:12px;border-radius:50px;
+  border:1px solid var(--border);background:transparent;
+  color:var(--muted);font-family:'Outfit',sans-serif;
+  font-size:.85rem;cursor:none;margin-top:8px;transition:all .25s;
+}
+.btn-back:hover{border-color:var(--blue);color:var(--white);}
+
+/* INFO BOX */
+.info-box{
+  background:rgba(16,212,142,.07);border:1px solid rgba(16,212,142,.2);
+  border-radius:12px;padding:14px 18px;margin-bottom:18px;
+}
+.info-box-title{font-size:.85rem;font-weight:700;color:var(--green);margin-bottom:4px;}
+.info-box-text{font-size:.78rem;color:var(--muted);line-height:1.5;}
+
+/* PRICE BOX */
+.price-box{
+  background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(139,92,246,.1));
+  border:1px solid rgba(59,130,246,.25);border-radius:16px;
+  padding:28px;text-align:center;margin:16px 0 24px;
+}
+.price-big{font-family:'Bebas Neue',sans-serif;font-size:4.5rem;letter-spacing:2px;color:var(--cyan);line-height:1;}
+.price-lbl{font-size:.85rem;color:var(--muted);margin-top:4px;}
+.price-note{font-size:.78rem;color:var(--gold);margin-top:8px;font-weight:600;}
+.perks-list{text-align:left;margin:16px 0;}
+.perks-list li{font-size:.85rem;color:var(--muted);padding:6px 0;display:flex;gap:10px;align-items:center;border-bottom:1px solid rgba(255,255,255,.04);}
+.perks-list li::before{content:'✓';color:var(--green);font-weight:700;}
+
+/* SUCCESS */
+.success{text-align:center;padding:20px 0;}
+.suc-icon{font-size:4.5rem;margin-bottom:18px;animation:popIn .5s cubic-bezier(.22,1,.36,1);}
+@keyframes popIn{from{transform:scale(0)rotate(-20deg);}to{transform:scale(1)rotate(0);}}
+.suc-t{font-family:'Bebas Neue',sans-serif;font-size:2.5rem;letter-spacing:1px;margin-bottom:10px;}
+.suc-d{color:var(--muted);font-size:.9rem;line-height:1.6;}
+
+/* CONTACT MODAL */
+.contact-detail{background:var(--ink3);border-radius:14px;padding:20px;margin:16px 0;text-align:left;}
+.cd-row{margin-bottom:14px;}
+.cd-lbl{font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px;}
+.cd-val{font-weight:600;color:var(--white);font-size:.95rem;}
+.cd-val.cyan{color:var(--cyan);font-size:1.1rem;}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:28px;right:28px;z-index:9999;
+  background:var(--ink2);border:1px solid var(--green);
+  border-radius:14px;padding:14px 22px;
+  display:none;align-items:center;gap:10px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 28px rgba(16,212,142,.12);
+  font-size:.88rem;font-weight:500;
+}
+#toast.on{display:flex;animation:toastIn .35s cubic-bezier(.22,1,.36,1);}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+
+/* ABOUT GRID */
+.about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;max-width:1100px;margin:0 auto;}
+.about-card{
+  background:rgba(16,19,28,.8);border:1px solid var(--border);
+  border-radius:var(--r);padding:28px 20px;text-align:center;
+  cursor:none;transition:all .35s;
+}
+.about-card:hover{transform:translateY(-8px) rotateX(4deg);border-color:rgba(59,130,246,.4);box-shadow:0 30px 60px rgba(0,0,0,.4);}
+.ac-icon{font-size:2.2rem;margin-bottom:12px;}
+.ac-t{font-weight:700;font-size:.95rem;margin-bottom:6px;}
+.ac-d{font-size:.8rem;color:var(--muted);line-height:1.55;}
+
+/* FOOTER */
+footer{
+  position:relative;z-index:1;
+  padding:40px 48px 28px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+}
+.foot-logo{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.foot-t{font-size:.78rem;color:var(--muted);}
+.foot-links{display:flex;gap:24px;}
+.foot-links a{color:var(--muted);font-size:.78rem;text-decoration:none;transition:color .2s;}
+.foot-links a:hover{color:var(--cyan);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--ink);}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:none;}}
+
+/* MOBILE */
+@media(max-width:768px){
+  nav{padding:0 20px;}
+  .room-3d,.nav-hint{display:none;}
+  #hero{padding:100px 20px 60px;}
+  .section{padding:60px 20px;}
+  #browse{padding:60px 20px;}
+  .filter-strip{flex-direction:column;}
+  .go-btn{width:100%;}
+  .timeline{flex-direction:column;gap:24px;}
+  .timeline::before{display:none;}
+  .hero-stats{gap:32px;}
+  footer{flex-direction:column;text-align:center;padding:32px 20px 20px;}
+  .foot-links{justify-content:center;}
+  .modal{padding:32px 22px;}
+  .browse-head{flex-direction:column;align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur2"></div>
+<canvas id="cv"></canvas>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav>
+  <div class="logo">ROOM<em>mitrra</em></div>
+  <div class="nav-hint">👆 <span>Choose your role below</span> to get started</div>
+  <div class="nav-right">
+    <button class="nb nb-ghost" onclick="openM('m-finder')">📌 Post Room</button>
+    <button class="nb nb-solid" onclick="openM('m-user')">🔍 Find Room</button>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section id="hero">
+
+  <!-- 3D Room SVG -->
+  <div class="room-3d" style="transform-style:preserve-3d;">
+    <svg viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;filter:drop-shadow(0 0 40px rgba(59,130,246,0.3))">
+      <!-- Floor -->
+      <path d="M30 200 L140 240 L250 200 L140 160 Z" fill="url(#floorGrad)" opacity=".9"/>
+      <!-- Left wall -->
+      <path d="M30 80 L30 200 L140 160 L140 40 Z" fill="url(#leftWall)" opacity=".9"/>
+      <!-- Right wall -->
+      <path d="M250 80 L250 200 L140 160 L140 40 Z" fill="url(#rightWall)" opacity=".9"/>
+      <!-- Ceiling -->
+      <path d="M30 80 L140 40 L250 80 L140 120 Z" fill="url(#ceilGrad)" opacity=".6"/>
+      <!-- Window on left wall -->
+      <rect x="50" y="100" width="50" height="40" rx="3" fill="rgba(6,214,245,0.15)" stroke="rgba(6,214,245,0.4)" stroke-width="1.5"/>
+      <line x1="75" y1="100" x2="75" y2="140" stroke="rgba(6,214,245,0.4)" stroke-width="1"/>
+      <line x1="50" y1="120" x2="100" y2="120" stroke="rgba(6,214,245,0.4)" stroke-width="1"/>
+      <!-- Bed -->
+      <path d="M70 175 L110 188 L110 210 L70 197 Z" fill="rgba(59,130,246,0.5)" stroke="rgba(59,130,246,0.8)" stroke-width="1"/>
+      <path d="M70 175 L110 163 L110 188 L70 175 Z" fill="rgba(59,130,246,0.7)" stroke="rgba(59,130,246,0.9)" stroke-width="1"/>
+      <!-- Pillow -->
+      <ellipse cx="90" cy="170" rx="15" ry="6" fill="rgba(240,244,255,0.7)" transform="rotate(-15 90 170)"/>
+      <!-- Desk right wall -->
+      <path d="M185 170 L235 155 L235 165 L185 180 Z" fill="rgba(139,92,246,0.5)" stroke="rgba(139,92,246,0.8)" stroke-width="1"/>
+      <!-- Monitor -->
+      <rect x="200" y="140" width="25" height="18" rx="2" fill="rgba(6,214,245,0.3)" stroke="rgba(6,214,245,0.6)" stroke-width="1"/>
+      <rect x="209" y="157" width="7" height="4" fill="rgba(6,214,245,0.4)"/>
+      <!-- Glow dots -->
+      <circle cx="140" cy="160" r="3" fill="rgba(59,130,246,0.8)"/>
+      <circle cx="100" cy="180" r="2" fill="rgba(6,214,245,0.6)"/>
+      <circle cx="200" cy="165" r="2" fill="rgba(139,92,246,0.6)"/>
+      <defs>
+        <linearGradient id="floorGrad" x1="30" y1="200" x2="250" y2="240" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1a2240"/>
+          <stop offset="100%" stop-color="#10131c"/>
+        </linearGradient>
+        <linearGradient id="leftWall" x1="30" y1="80" x2="140" y2="160" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1e2d50"/>
+          <stop offset="100%" stop-color="#161b2e"/>
+        </linearGradient>
+        <linearGradient id="rightWall" x1="250" y1="80" x2="140" y2="160" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#141a2e"/>
+          <stop offset="100%" stop-color="#0f1220"/>
+        </linearGradient>
+        <linearGradient id="ceilGrad" x1="30" y1="80" x2="250" y2="40" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#243060"/>
+          <stop offset="100%" stop-color="#1a2248"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="hero-eyebrow"><div class="blink"></div>Delhi NCR's Smartest Room Platform</div>
+
+  <h1 class="hero-title">
+    <span class="ht1">FIND YOUR</span>
+    <span class="ht2">PERFECT ROOM</span>
+    <span class="ht3">&amp; ROOMMITR.</span>
+  </h1>
+
+  <p class="hero-sub">Verified flats across Delhi, Noida, Gurgaon & Faridabad — filter by location, flat type, and ideal roommate. Your home is one click away.</p>
+
+  <!-- ── GUIDED CHOICE ── -->
+  <p class="choice-label">↓ &nbsp;Who are you? Pick your role to begin</p>
+  <div class="choice-row">
+
+    <div class="choice-card finder" onclick="openM('m-finder')">
+      <span class="choice-icon">🏠</span>
+      <div class="choice-pill">100% FREE to Post</div>
+      <div class="choice-name">FINDER</div>
+      <div class="choice-desc">You have a flat or room and want the right roommate.</div>
+      <ul class="choice-perks">
+        <li>Unlimited free listings</li>
+        <li>Set roommate type preferences</li>
+        <li>Verified badge on your post</li>
+        <li>Direct enquiries to your phone</li>
+      </ul>
+      <button class="choice-btn">Post My Flat → Free</button>
+    </div>
+
+    <div class="or-divider"><div class="or-line"></div>OR<div class="or-line"></div></div>
+
+    <div class="choice-card seeker" onclick="openM('m-user')">
+      <span class="choice-icon">🔍</span>
+      <div class="choice-pill">₹0 — Launch Offer</div>
+      <div class="choice-name">SEEKER</div>
+      <div class="choice-desc">You need a room in Delhi NCR with the right vibe.</div>
+      <ul class="choice-perks">
+        <li>Browse all verified listings</li>
+        <li>Filter by location, BHK, partner type</li>
+        <li>See full owner contact details</li>
+        <li>Save favourites, move in fast</li>
+      </ul>
+      <button class="choice-btn">Find My Room → ₹0</button>
+    </div>
+
+  </div>
+
+  <div class="hero-stats">
+    <div class="hstat"><div class="hstat-n" data-t="1200">0+</div><div class="hstat-l">Active Listings</div></div>
+    <div class="hstat"><div class="hstat-n" data-t="8500">0+</div><div class="hstat-l">Happy Residents</div></div>
+    <div class="hstat"><div class="hstat-n" data-t="24">0+</div><div class="hstat-l">NCR Locations</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="section rv" id="how">
+  <div style="text-align:center;max-width:1000px;margin:0 auto;">
+    <div class="sec-tag">Process</div>
+    <h2 class="sec-title">How It Works</h2>
+    <p class="sec-sub" style="margin:0 auto 50px;">Four simple steps — from clicking to moving in. No middlemen, no confusion.</p>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-num" data-icon="🎭">01</div>
+        <div class="tl-t">Pick Your Role</div>
+        <div class="tl-d">Finder (have flat) or Seeker (need room) — choose above in hero.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-num" data-icon="📝">02</div>
+        <div class="tl-t">Fill The Form</div>
+        <div class="tl-d">A 3-step guided form collects everything we need in under 3 mins.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-num" data-icon="🔮">03</div>
+        <div class="tl-t">Smart Match</div>
+        <div class="tl-d">Our filters show you only rooms that match your lifestyle and budget.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-num" data-icon="🤝">04</div>
+        <div class="tl-t">Connect & Move</div>
+        <div class="tl-d">Contact owners directly, visit, and move into your perfect home.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ BROWSE LISTINGS ═══════════ -->
+<section id="browse">
+  <div class="browse-head rv">
+    <div>
+      <div class="sec-tag">Browse</div>
+      <h2 class="sec-title" style="margin-bottom:0;">Available Rooms</h2>
+    </div>
+    <button class="nb nb-solid" onclick="openM('m-finder')" style="padding:12px 28px;border-radius:50px;font-size:.9rem;">+ Post Your Room Free</button>
+  </div>
+
+  <div class="filter-strip rv">
+    <div class="fg">
+      <label>📍 Location</label>
+      <select id="fl-loc">
+        <option value="">All Locations</option>
+        <option>Noida Sector 62</option>
+        <option>Noida Sector 18</option>
+        <option>Dwarka, Delhi</option>
+        <option>Laxmi Nagar, Delhi</option>
+        <option>Saket, Delhi</option>
+        <option>Connaught Place, Delhi</option>
+        <option>Gurgaon Cyber City</option>
+        <option>Gurgaon Sector 45</option>
+        <option>Faridabad</option>
+        <option>Greater Noida</option>
+        <option>Vasant Kunj, Delhi</option>
+        <option>Rohini, Delhi</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>🏠 Flat Type</label>
+      <select id="fl-bhk">
+        <option value="">Any BHK</option>
+        <option>1 BHK</option>
+        <option>2 BHK</option>
+        <option>3 BHK</option>
+        <option>Studio</option>
+        <option>PG Room</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>👤 Partner Type</label>
+      <select id="fl-partner">
+        <option value="">Any</option>
+        <option>Single Male</option>
+        <option>Single Female</option>
+        <option>Couple</option>
+        <option>Family</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>💰 Max Budget</label>
+      <select id="fl-budget">
+        <option value="">No Limit</option>
+        <option value="10000">Under ₹10,000</option>
+        <option value="15000">Under ₹15,000</option>
+        <option value="20000">Under ₹20,000</option>
+        <option value="30000">Under ₹30,000</option>
+      </select>
+    </div>
+    <button class="go-btn" onclick="doFilter()">Search Rooms →</button>
+  </div>
+
+  <div class="cards-grid" id="cards-grid"></div>
+</section>
+
+<!-- ═══════════ ABOUT ═══════════ -->
+<section class="section rv" id="about">
+  <div style="text-align:center;max-width:1100px;margin:0 auto;">
+    <div class="sec-tag">Why Us</div>
+    <h2 class="sec-title">Why ROOMmitrra?</h2>
+    <p class="sec-sub" style="margin:0 auto 48px;">More than listings — a full ecosystem built for Delhi NCR room sharing.</p>
+    <div class="about-grid">
+      <div class="about-card"><div class="ac-icon">🛡️</div><div class="ac-t">Verified Listings</div><div class="ac-d">Every post reviewed manually. No fake listings, ever.</div></div>
+      <div class="about-card"><div class="ac-icon">⚡</div><div class="ac-t">Instant Matching</div><div class="ac-d">Smart filters — see only rooms that fit your life.</div></div>
+      <div class="about-card"><div class="ac-icon">💬</div><div class="ac-t">Direct Contact</div><div class="ac-d">No middlemen. Chat directly with owners.</div></div>
+      <div class="about-card"><div class="ac-icon">🆓</div><div class="ac-t">Free for Finders</div><div class="ac-d">Posting is always free. No hidden charges.</div></div>
+      <div class="about-card"><div class="ac-icon">📍</div><div class="ac-t">NCR Focused</div><div class="ac-d">24+ hyper-local Delhi NCR locations covered.</div></div>
+      <div class="about-card"><div class="ac-icon">🌙</div><div class="ac-t">24/7 Support</div><div class="ac-d">Our team is always here when you need us.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="foot-logo">ROOMmitrra</div>
+  <div class="foot-t">© 2025 ROOMmitrra · Delhi NCR's #1 Room Platform</div>
+  <div class="foot-links">
+    <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a><a href="#">FAQ</a>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════
+     FINDER MODAL — Post a Room
+═══════════════════════════════ -->
+<div class="overlay" id="m-finder">
+  <div class="modal">
+    <button class="modal-x" onclick="closeM('m-finder')">✕</button>
+    <div class="modal-title" style="color:var(--blue);">🏠 Post Your Room</div>
+    <div class="modal-sub">Completely free · Takes 3 minutes · Go live today</div>
+    <div class="stepper" id="fs">
+      <div class="sp a"><div class="sp-c">1</div><div class="sp-l">Basics</div></div>
+      <div class="sp"><div class="sp-c">2</div><div class="sp-l">Details</div></div>
+      <div class="sp"><div class="sp-c">3</div><div class="sp-l">Roommate</div></div>
+      <div class="sp"><div class="sp-c">4</div><div class="sp-l">Contact</div></div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="panel on" id="fp0">
+      <div class="fg2"><label>Your Full Name</label><input id="fn" type="text" placeholder="e.g. Rahul Sharma"></div>
+      <div class="fg2">
+        <label>Flat Type</label>
+        <div class="chips" id="bhk-g">
+          <button class="chip" onclick="sc(this,'bhk-g')">1 BHK</button>
+          <button class="chip" onclick="sc(this,'bhk-g')">2 BHK</button>
+          <button class="chip" onclick="sc(this,'bhk-g')">3 BHK</button>
+          <button class="chip" onclick="sc(this,'bhk-g')">Studio</button>
+          <button class="chip" onclick="sc(this,'bhk-g')">PG Room</button>
+        </div>
+      </div>
+      <div class="fg2">
+        <label>Location in Delhi NCR</label>
+        <select id="floc">
+          <option value="">— Select Location —</option>
+          <option>Noida Sector 62</option><option>Noida Sector 18</option>
+          <option>Dwarka, Delhi</option><option>Laxmi Nagar, Delhi</option>
+          <option>Saket, Delhi</option><option>Connaught Place, Delhi</option>
+          <option>Gurgaon Cyber City</option><option>Gurgaon Sector 45</option>
+          <option>Faridabad</option><option>Greater Noida</option>
+          <option>Vasant Kunj, Delhi</option><option>Rohini, Delhi</option>
+          <option>Pitampura, Delhi</option><option>Janakpuri, Delhi</option>
+        </select>
+      </div>
+      <button class="btn-next" onclick="fNext(0)">Next: Add Flat Details →</button>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="panel" id="fp1">
+      <div class="frow">
+        <div class="fg2"><label>Monthly Rent (₹)</label><input id="frent" type="number" placeholder="e.g. 15000"></div>
+        <div class="fg2"><label>Available From</label><input id="fdate" type="date"></div>
+      </div>
+      <div class="fg2">
+        <label>Furnishing</label>
+        <div class="chips" id="furn-g">
+          <button class="chip" onclick="sc(this,'furn-g')">Fully Furnished</button>
+          <button class="chip" onclick="sc(this,'furn-g')">Semi Furnished</button>
+          <button class="chip" onclick="sc(this,'furn-g')">Unfurnished</button>
+        </div>
+      </div>
+      <div class="fg2">
+        <label>Amenities (select all that apply)</label>
+        <div class="chips" id="amen-g">
+          <button class="chip multi" onclick="tc(this)">WiFi</button>
+          <button class="chip multi" onclick="tc(this)">AC</button>
+          <button class="chip multi" onclick="tc(this)">Parking</button>
+          <button class="chip multi" onclick="tc(this)">Gym</button>
+          <button class="chip multi" onclick="tc(this)">Power Backup</button>
+          <button class="chip multi" onclick="tc(this)">Security</button>
+          <button class="chip multi" onclick="tc(this)">Laundry</button>
+        </div>
+      </div>
+      <div class="fg2"><label>Description</label><textarea id="fdesc" placeholder="Nearby metro, society name, floor, anything extra..."></textarea></div>
+      <button class="btn-next" onclick="fNext(1)">Next: Roommate Preferences →</button>
+      <button class="btn-back" onclick="fBack(1)">← Back</button>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="panel" id="fp2">
+      <div class="fg2">
+        <label>Looking for roommate type</label>
+        <div class="chips" id="rtype-g">
+          <button class="chip" onclick="sc(this,'rtype-g')">Single Male</button>
+          <button class="chip" onclick="sc(this,'rtype-g')">Single Female</button>
+          <button class="chip" onclick="sc(this,'rtype-g')">Couple</button>
+          <button class="chip" onclick="sc(this,'rtype-g')">Family</button>
+          <button class="chip" onclick="sc(this,'rtype-g')">Any</button>
+        </div>
+      </div>
+      <div class="fg2">
+        <label>Profession preference</label>
+        <div class="chips" id="prof-g">
+          <button class="chip" onclick="sc(this,'prof-g')">Working Professional</button>
+          <button class="chip" onclick="sc(this,'prof-g')">Student</button>
+          <button class="chip" onclick="sc(this,'prof-g')">Any</button>
+        </div>
+      </div>
+      <div class="fg2">
+        <label>House rules</label>
+        <div class="chips" id="rules-g">
+          <button class="chip multi" onclick="tc(this)">Non-Smoker</button>
+          <button class="chip multi" onclick="tc(this)">Non-Drinker</button>
+          <button class="chip multi" onclick="tc(this)">No Pets</button>
+          <button class="chip multi" onclick="tc(this)">Veg Preferred</button>
+          <button class="chip multi" onclick="tc(this)">Night Owl OK</button>
+        </div>
+      </div>
+      <button class="btn-next" onclick="fNext(2)">Next: Contact Info →</button>
+      <button class="btn-back" onclick="fBack(2)">← Back</button>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="panel" id="fp3">
+      <div class="info-box">
+        <div class="info-box-title">🎉 Posting is 100% FREE forever</div>
+        <div class="info-box-text">Your listing will be live within 30 minutes after a quick review by our team.</div>
+      </div>
+      <div class="fg2"><label>Phone Number</label><input id="fphone" type="tel" placeholder="+91 98765 43210"></div>
+      <div class="fg2"><label>Email Address</label><input id="femail" type="email" placeholder="you@example.com"></div>
+      <button class="btn-sub" onclick="submitFinder()">🚀 Post My Room for FREE</button>
+      <button class="btn-back" onclick="fBack(3)">← Back</button>
+    </div>
+
+    <!-- Success -->
+    <div class="panel" id="fp-ok">
+      <div class="success">
+        <div class="suc-icon">🎉</div>
+        <div class="suc-t">ROOM POSTED!</div>
+        <div class="suc-d">Your listing is under review and will go live shortly.<br>We'll notify you on the details you provided.</div>
+        <button class="btn-next" style="margin-top:24px;" onclick="closeM('m-finder')">Done ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SEEKER MODAL — Find a Room
+═══════════════════════════════ -->
+<div class="overlay" id="m-user">
+  <div class="modal">
+    <button class="modal-x" onclick="closeM('m-user')">✕</button>
+    <div class="modal-title" style="color:var(--cyan);">🔍 Find Your Room</div>
+    <div class="modal-sub">Set your preferences · Browse verified rooms · Move in fast</div>
+    <div class="stepper" id="us">
+      <div class="sp a"><div class="sp-c">1</div><div class="sp-l">Profile</div></div>
+      <div class="sp"><div class="sp-c">2</div><div class="sp-l">Preferences</div></div>
+      <div class="sp"><div class="sp-c">3</div><div class="sp-l">Access</div></div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="panel on" id="up0">
+      <div class="fg2"><label>Your Name</label><input id="un" type="text" placeholder="e.g. Priya Mehta"></div>
+      <div class="fg2">
+        <label>I am a</label>
+        <div class="chips" id="utype-g">
+          <button class="chip" onclick="sc(this,'utype-g')">Single Male</button>
+          <button class="chip" onclick="sc(this,'utype-g')">Single Female</button>
+          <button class="chip" onclick="sc(this,'utype-g')">Couple</button>
+          <button class="chip" onclick="sc(this,'utype-g')">Family</button>
+        </div>
+      </div>
+      <div class="fg2">
+        <label>Profession</label>
+        <div class="chips" id="uprof-g">
+          <button class="chip" onclick="sc(this,'uprof-g')">Working Professional</button>
+          <button class="chip" onclick="sc(this,'uprof-g')">Student</button>
+          <button class="chip" onclick="sc(this,'uprof-g')">Other</button>
+        </div>
+      </div>
+      <div class="fg2"><label>Phone Number</label><input id="uphone" type="tel" placeholder="+91 98765 43210"></div>
+      <button class="btn-next" onclick="uNext(0)">Next: Set Room Preferences →</button>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="panel" id="up1">
+      <div class="fg2">
+        <label>Preferred Location</label>
+        <select id="uloc">
+          <option value="">— Select Location —</option>
+          <option>Noida Sector 62</option><option>Noida Sector 18</option>
+          <option>Dwarka, Delhi</option><option>Laxmi Nagar, Delhi</option>
+          <option>Saket, Delhi</option><option>Connaught Place, Delhi</option>
+          <option>Gurgaon Cyber City</option><option>Gurgaon Sector 45</option>
+          <option>Faridabad</option><option>Greater Noida</option>
+          <option>Vasant Kunj, Delhi</option><option>Rohini, Delhi</option>
+          <option>Any / Flexible</option>
+        </select>
+      </div>
+      <div class="fg2">
+        <label>Room Type Needed</label>
+        <div class="chips" id="ubhk-g">
+          <button class="chip" onclick="sc(this,'ubhk-g')">1 BHK</button>
+          <button class="chip" onclick="sc(this,'ubhk-g')">2 BHK</button>
+          <button class="chip" onclick="sc(this,'ubhk-g')">3 BHK</button>
+          <button class="chip" onclick="sc(this,'ubhk-g')">Studio</button>
+          <button class="chip" onclick="sc(this,'ubhk-g')">PG Room</button>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg2"><label>Min Budget (₹)</label><input type="number" id="umin" placeholder="5000"></div>
+        <div class="fg2"><label>Max Budget (₹)</label><input type="number" id="umax" placeholder="25000"></div>
+      </div>
+      <div class="fg2">
+        <label>Move-in Timeline</label>
+        <div class="chips" id="utl-g">
+          <button class="chip" onclick="sc(this,'utl-g')">Immediately</button>
+          <button class="chip" onclick="sc(this,'utl-g')">Within a Week</button>
+          <button class="chip" onclick="sc(this,'utl-g')">This Month</button>
+          <button class="chip" onclick="sc(this,'utl-g')">Flexible</button>
+        </div>
+      </div>
+      <button class="btn-next" onclick="uNext(1)">Next: Get Access →</button>
+      <button class="btn-back" onclick="uBack(1)">← Back</button>
+    </div>
+
+    <!-- Step 3 — Payment -->
+    <div class="panel" id="up2">
+      <div style="text-align:center;">
+        <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Unlock Full Room Access</div>
+        <div style="font-size:.82rem;color:var(--muted);">See owner contacts, save rooms, get priority listings</div>
+      </div>
+      <div class="price-box">
+        <div class="price-big">₹0</div>
+        <div class="price-lbl">Introductory Free Pass</div>
+        <div class="price-note">🎁 Launch Offer — First month completely FREE</div>
+      </div>
+      <ul class="perks-list">
+        <li>Access all owner contact details</li>
+        <li>Unlimited room saves & favourites</li>
+        <li>Priority placement in searches</li>
+        <li>Personalised room recommendations</li>
+      </ul>
+      <button class="btn-sub" onclick="submitUser()">🚀 Get Free Access — ₹0</button>
+      <button class="btn-back" onclick="uBack(2)">← Back</button>
+    </div>
+
+    <!-- Success -->
+    <div class="panel" id="up-ok">
+      <div class="success">
+        <div class="suc-icon">🏠</div>
+        <div class="suc-t">YOU'RE IN!</div>
+        <div class="suc-d">Profile created. Browse verified rooms below and contact owners directly.<br>Happy house hunting! 🎉</div>
+        <button class="btn-next" style="margin-top:24px;background:var(--cyan);color:var(--ink);" onclick="closeM('m-user');scrollToListings();">Browse Rooms Now →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div class="overlay" id="m-contact">
+  <div class="modal" style="max-width:420px;text-align:center;">
+    <button class="modal-x" onclick="closeM('m-contact')">✕</button>
+    <div style="font-size:3rem;margin-bottom:14px;" id="ci-emoji">🏠</div>
+    <div class="modal-title" id="ci-title" style="font-size:1.4rem;"></div>
+    <div class="modal-sub">Owner Contact Details</div>
+    <div class="contact-detail">
+      <div class="cd-row"><div class="cd-lbl">Owner Name</div><div class="cd-val" id="ci-owner"></div></div>
+      <div class="cd-row"><div class="cd-lbl">Phone</div><div class="cd-val cyan" id="ci-phone"></div></div>
+      <div class="cd-row" style="margin-bottom:0;"><div class="cd-lbl">Email</div><div class="cd-val" id="ci-email"></div></div>
+    </div>
+    <button class="btn-next" onclick="closeM('m-contact')">Got It! 👍</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"><span id="t-emoji">✅</span><span id="t-msg">Done!</span></div>
+
+<script>
+// ── CURSOR ──
+const C=document.getElementById('cur'),C2=document.getElementById('cur2');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;C.style.left=mx+'px';C.style.top=my+'px';});
+(function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;C2.style.left=rx+'px';C2.style.top=ry+'px';requestAnimationFrame(loop);})();
+
+// ── CANVAS PARTICLES ──
+const cv=document.getElementById('cv'),ct=cv.getContext('2d');
+let W,H;
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight;}rs();addEventListener('resize',rs);
+const nodes=Array.from({length:90},()=>({x:Math.random()*9999,y:Math.random()*9999,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*1.8+.8}));
+nodes.forEach(n=>{n.x=Math.random()*W;n.y=Math.random()*H;});
+function draw(){
+  ct.clearRect(0,0,W,H);
+  nodes.forEach(n=>{
+    n.x+=n.vx;n.y+=n.vy;
+    if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;
+    ct.beginPath();ct.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ct.fillStyle='rgba(59,130,246,.35)';ct.fill();
+  });
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const d=Math.hypot(nodes[i].x-nodes[j].x,nodes[i].y-nodes[j].y);
+    if(d<130){ct.beginPath();ct.moveTo(nodes[i].x,nodes[i].y);ct.lineTo(nodes[j].x,nodes[j].y);
+      ct.strokeStyle=`rgba(59,130,246,${.1*(1-d/130)})`;ct.lineWidth=.6;ct.stroke();}
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ── SCROLL REVEAL ──
+const obs=new IntersectionObserver(en=>en.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis');}),{threshold:.08});
+document.querySelectorAll('.rv').forEach(r=>obs.observe(r));
+
+// ── COUNTER ──
+function countUp(el,t){
+  let s=0;const d=1600;
+  (function f(ts){if(!s)s=ts;const p=Math.min((ts-s)/d,1);const e=1-Math.pow(1-p,3);
+    el.textContent=Math.floor(e*t).toLocaleString()+'+';if(p<1)requestAnimationFrame(f);})
+  (performance.now());
+}
+const sObs=new IntersectionObserver(en=>{
+  if(en[0].isIntersecting){document.querySelectorAll('[data-t]').forEach(el=>countUp(el,+el.dataset.t));sObs.disconnect();}
+},{threshold:.5});
+const hs=document.querySelector('.hero-stats');if(hs)sObs.observe(hs);
+
+// ── LISTINGS DATA ──
+const DATA=[
+  {id:1,e:'🏠',t:'Spacious 2 BHK with Balcony',loc:'Noida Sector 62',bhk:'2 BHK',partner:'Single Male',rent:18000,furn:'Fully Furnished',amen:'WiFi, AC, Parking',owner:'Raj Kumar',ph:'+91 99100 12345',em:'raj@email.com'},
+  {id:2,e:'🏡',t:'Modern 1 BHK Studio',loc:'Dwarka, Delhi',bhk:'1 BHK',partner:'Single Female',rent:12000,furn:'Semi Furnished',amen:'WiFi, Power Backup',owner:'Sunita Verma',ph:'+91 98200 54321',em:'sunita@email.com'},
+  {id:3,e:'🏢',t:'Luxury 3 BHK Flat',loc:'Gurgaon Cyber City',bhk:'3 BHK',partner:'Couple',rent:45000,furn:'Fully Furnished',amen:'WiFi, AC, Gym, Parking',owner:'Amit Singh',ph:'+91 97300 67890',em:'amit@email.com'},
+  {id:4,e:'🏘️',t:'Cosy Studio near Metro',loc:'Saket, Delhi',bhk:'Studio',partner:'Single Female',rent:9500,furn:'Fully Furnished',amen:'WiFi, AC',owner:'Meera Joshi',ph:'+91 96400 11223',em:'meera@email.com'},
+  {id:5,e:'🏠',t:'Well-maintained 2 BHK',loc:'Laxmi Nagar, Delhi',bhk:'2 BHK',partner:'Any',rent:14000,furn:'Semi Furnished',amen:'Power Backup, Security',owner:'Deepak Yadav',ph:'+91 95500 33445',em:'deepak@email.com'},
+  {id:6,e:'🏡',t:'Premium PG with Meals',loc:'Greater Noida',bhk:'PG Room',partner:'Single Male',rent:7000,furn:'Fully Furnished',amen:'WiFi, Meals, Laundry',owner:'Priya Sharma',ph:'+91 94600 55667',em:'priya@email.com'},
+  {id:7,e:'🏢',t:'2 BHK Near Metro Station',loc:'Rohini, Delhi',bhk:'2 BHK',partner:'Couple',rent:20000,furn:'Fully Furnished',amen:'WiFi, AC, Security',owner:'Vikas Gupta',ph:'+91 93700 77889',em:'vikas@email.com'},
+  {id:8,e:'🏘️',t:'1 BHK Independent Floor',loc:'Faridabad',bhk:'1 BHK',partner:'Single Male',rent:8500,furn:'Unfurnished',amen:'Power Backup',owner:'Ashok Tiwari',ph:'+91 92800 99001',em:'ashok@email.com'},
+  {id:9,e:'🏠',t:'3 BHK with Pool & Gym',loc:'Vasant Kunj, Delhi',bhk:'3 BHK',partner:'Family',rent:38000,furn:'Fully Furnished',amen:'WiFi, Gym, Pool, Security',owner:'Nandini Kapoor',ph:'+91 91900 22334',em:'nandini@email.com'},
+];
+
+function renderCards(list){
+  const g=document.getElementById('cards-grid');
+  if(!list.length){g.innerHTML='<div class="no-res">😕 No rooms match your filters. Try adjusting the search.</div>';return;}
+  g.innerHTML=list.map(l=>`
+    <div class="lc">
+      <div class="lc-top">${l.e}</div>
+      <div class="lc-body">
+        <div class="lc-tags">
+          <span class="tag t-blue">${l.bhk}</span>
+          <span class="tag t-violet">${l.partner}</span>
+          <span class="tag t-cyan">📍 ${l.loc.split(',')[0]}</span>
+          <span class="tag t-gold">${l.furn}</span>
+        </div>
+        <div class="lc-title">${l.t}</div>
+        <div class="lc-loc">📍 ${l.loc} &nbsp;·&nbsp; ${l.amen}</div>
+        <div class="lc-row">
+          <div class="lc-price">₹${l.rent.toLocaleString()} <span>/month</span></div>
+          <button class="contact-btn" onclick="showContact(${l.id})">Contact Owner →</button>
+        </div>
+      </div>
+    </div>`).join('');
+  // 3D tilt
+  document.querySelectorAll('.lc').forEach(c=>{
+    c.addEventListener('mousemove',e=>{
+      const r=c.getBoundingClientRect();
+      const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      c.style.transform=`translateY(-10px) rotateX(${-y*10}deg) rotateY(${x*10}deg)`;
+    });
+    c.addEventListener('mouseleave',()=>c.style.transform='');
+  });
+}
+renderCards(DATA);
+
+function doFilter(){
+  const loc=document.getElementById('fl-loc').value;
+  const bhk=document.getElementById('fl-bhk').value;
+  const p=document.getElementById('fl-partner').value;
+  const b=+document.getElementById('fl-budget').value||Infinity;
+  renderCards(DATA.filter(l=>
+    (!loc||l.loc===loc)&&(!bhk||l.bhk===bhk)&&
+    (!p||l.partner===p||l.partner==='Any')&&l.rent<=b
+  ));
+  toast('🔍','Filter applied!');
+}
+
+function showContact(id){
+  const l=DATA.find(x=>x.id===id);
+  document.getElementById('ci-emoji').textContent=l.e;
+  document.getElementById('ci-title').textContent=l.t;
+  document.getElementById('ci-owner').textContent=l.owner;
+  document.getElementById('ci-phone').textContent=l.ph;
+  document.getElementById('ci-email').textContent=l.em;
+  openM('m-contact');
+}
+
+// ── MODALS ──
+function openM(id){document.getElementById(id).classList.add('on');document.body.style.overflow='hidden';}
+function closeM(id){
+  document.getElementById(id).classList.remove('on');document.body.style.overflow='';
+  if(id==='m-finder')resetFinder();if(id==='m-user')resetUser();
+}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeM(o.id);}));
+addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.on').forEach(o=>closeM(o.id));});
+
+// ── FINDER STEPPER ──
+let fs=0;
+function fNext(from){
+  fs=from+1;
+  document.querySelectorAll('#m-finder .panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('fp'+fs).classList.add('on');
+  updateS('fs',fs,4);
+}
+function fBack(from){fs=from-1;document.querySelectorAll('#m-finder .panel').forEach(p=>p.classList.remove('on'));document.getElementById('fp'+fs).classList.add('on');updateS('fs',fs,4);}
+function submitFinder(){
+  const n=document.getElementById('fn').value||'Owner';
+  const loc=document.getElementById('floc').value||'Delhi NCR';
+  const rent=+document.getElementById('frent').value||10000;
+  const bhkEl=document.querySelector('#bhk-g .chip.on');
+  const rtEl=document.querySelector('#rtype-g .chip.on');
+  DATA.unshift({id:Date.now(),e:'✨',t:`${bhkEl?bhkEl.textContent:'Room'} by ${n}`,loc,bhk:bhkEl?bhkEl.textContent:'Room',partner:rtEl?rtEl.textContent:'Any',rent,furn:'Furnished',amen:'Various',owner:n,ph:document.getElementById('fphone').value||'On Request',em:document.getElementById('femail').value||'On Request'});
+  renderCards(DATA);
+  document.querySelectorAll('#m-finder .panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('fp-ok').classList.add('on');
+  toast('🎉','Room posted successfully!');
+}
+function resetFinder(){fs=0;document.querySelectorAll('#m-finder .panel').forEach(p=>p.classList.remove('on'));document.getElementById('fp0').classList.add('on');updateS('fs',0,4);}
+
+// ── USER STEPPER ──
+let us=0;
+function uNext(from){us=from+1;document.querySelectorAll('#m-user .panel').forEach(p=>p.classList.remove('on'));document.getElementById('up'+us).classList.add('on');updateS('us',us,3);}
+function uBack(from){us=from-1;document.querySelectorAll('#m-user .panel').forEach(p=>p.classList.remove('on'));document.getElementById('up'+us).classList.add('on');updateS('us',us,3);}
+function submitUser(){document.querySelectorAll('#m-user .panel').forEach(p=>p.classList.remove('on'));document.getElementById('up-ok').classList.add('on');toast('🏠','Welcome to ROOMmitrra!');}
+function resetUser(){us=0;document.querySelectorAll('#m-user .panel').forEach(p=>p.classList.remove('on'));document.getElementById('up0').classList.add('on');updateS('us',0,3);}
+
+function updateS(sid,active,total){
+  const dots=document.querySelectorAll(`#${sid} .sp`);
+  dots.forEach((d,i)=>{d.classList.remove('a','d');if(i===active)d.classList.add('a');else if(i<active)d.classList.add('d');});
+}
+
+// ── CHIPS ──
+function sc(el,gid){document.querySelectorAll(`#${gid} .chip`).forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+function tc(el){el.classList.toggle('on');}
+
+// ── TOAST ──
+function toast(emoji,msg){
+  document.getElementById('t-emoji').textContent=emoji;
+  document.getElementById('t-msg').textContent=msg;
+  const t=document.getElementById('toast');t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),3200);
+}
+
+function scrollToListings(){setTimeout(()=>document.getElementById('browse').scrollIntoView({behavior:'smooth'}),300);}
+
+// ── 3D TILT on about & step cards ──
+document.querySelectorAll('.about-card,.tl-item').forEach(c=>{
+  c.addEventListener('mousemove',e=>{
+    const r=c.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+    c.style.transform=`translateY(-8px) rotateX(${-y*8}deg) rotateY(${x*8}deg)`;
+  });
+  c.addEventListener('mouseleave',()=>c.style.transform='');
+});
+</script>
+</body>
+</html>
